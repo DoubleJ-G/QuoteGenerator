@@ -1,5 +1,8 @@
-// Get Quote From API
+// CONST Values
 
+const MAX_RETRY = 3;
+
+//DOM Elements
 const quoteContainer = document.getElementById('quote-container');
 const quoteText = document.getElementById('quote');
 const authorText = document.getElementById('author');
@@ -19,7 +22,8 @@ function showQuote() {
 	}
 }
 
-async function getQuote() {
+// Get Quote From API
+async function getQuote(tries = 0) {
 	showLoader();
 	const PROXY = 'https://cors-anywhere.herokuapp.com/';
 	const URL =
@@ -27,6 +31,11 @@ async function getQuote() {
 	try {
 		const response = await fetch(PROXY + URL);
 		const data = await response.json();
+
+		if (data.quoteText === quoteText.innerText) {
+			throw new Error('Got same quote, retrying');
+		}
+
 		// If blank author add 'Unknown'
 		authorText.innerText === '' ? 'Unknown' : data.quoteAuthor;
 		// Shrink if text is too long
@@ -37,8 +46,10 @@ async function getQuote() {
 		}
 		quoteText.innerText = data.quoteText;
 	} catch (error) {
-		getQuote();
-		console.log('No Quote', error);
+		if (tries < MAX_RETRY) {
+			getQuote(tries + 1);
+		}
+		console.log('Error retrieving quote', error);
 	}
 	showQuote();
 }
